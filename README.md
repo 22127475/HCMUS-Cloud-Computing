@@ -1,1 +1,1 @@
-# -HCMUS-Cloud-Computing-Project-01
+# [HCMUS] Cloud Computing Project
