@@ -1,0 +1,379 @@
+<head>
+    <script src="editprofile.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        
+        document.addEventListener('DOMContentLoaded', function () {
+        // Parse selected locations from backend data
+        
+
+        // Initialize Select2
+        const locationDropdown = $('#location');
+        locationDropdown.select2({
+            placeholder: 'Search for a location',
+            allowClear: true,
+            width: 'resolve',
+        });
+
+        let selectedLocations = JSON.parse('{{{json user.districts}}}'); // Ensure proper serialization
+        
+        // Set default selected values
+        if (Array.isArray(selectedLocations)) {
+            selectedLocations.forEach(location => {
+                if (!locationDropdown.find(`option[value="${location}"]`).length) {
+                    locationDropdown.append(new Option(location, location, true, true));
+                }
+            });
+            locationDropdown.val(selectedLocations).trigger('change');
+        }
+
+        // Handle add location button click
+        document.querySelector('.add-location-button').addEventListener('click', function () {
+            const selectedLocations = locationDropdown.val();
+            const addedLocationsContainer = document.querySelector('.added-locations');
+            addedLocationsContainer.innerHTML = ''; // Clear previous locations
+
+            if (Array.isArray(selectedLocations)) {
+                selectedLocations.forEach(location => {
+                    const locationElement = document.createElement('div');
+                    locationElement.className = 'added-location';
+                    locationElement.textContent = location;
+                    addedLocationsContainer.appendChild(locationElement);
+                });
+            }
+        });
+    });
+
+
+
+        
+    </script>
+</head>
+
+<div class="main-content">
+    <div class="profile-section">
+        <div class="profile">
+            <div class="profile-pic">
+                <img src="/assets/image/user.png" alt="">
+            </div>
+            <div class="profile-text">
+                <h2 class="fullname">{{user.fullname}}</h2>
+                <P><img src="/assets/icon/calendar.svg" alt=""> {{formatDate user.dateOfBirth}}</P>
+                <P><img src="/assets/icon/mail.svg" alt=""> {{user.email}}</P>
+                <P><img src="/assets/icon/position.svg" alt=""> 
+                    {{#each user.districts }}
+                        {{this}}
+                    {{/each}}
+                </P>
+                </ul>
+            </div>
+        </div>
+        <div>
+            <button class="edit-button" onclick="openEditModal()">Edit Profile</button>
+            <button class="edit-button" onclick = "logout()">Log out </button>
+        </div>
+    </div>
+    
+    <div class="section-02">
+        <h2>Your <span>Favorites Categories</span></h2>
+        <nav class="menu-bar">
+            <a href="#" class="menu-item active">All</a>
+            <a href="#" class="menu-item">Food</a>
+            <a href="#" class="menu-item">Drinks</a>
+            <a href="#" class="menu-item">Activities</a>
+            <a href="#" class="menu-item">Desserts</a>
+        </nav>
+        <div class="slider">
+            <div class="slider-wrapper">
+                <button class="slider-btn prev">
+                    <img src="/assets/icon/left-arrow.svg" alt="Left" width="24" height="24">
+                </button>
+                <div class="slider-container">
+                    <div class="slider-slide">
+                        <div class="image-container">
+                            <img src="/assets/image/restaurant.png" alt="Restaurant 1">
+                            <button id="heart" class="heart-btn" onclick="toggleHeart(this)">
+                                <img src="/assets/icon/heart.svg" alt="Heart icon">
+                            </button>
+                        </div>
+                        <div class="text-container">
+                            <h3>Mama Ngon - Luxury Restaurant</h3>
+                            <p>⏰ 9:00 AM - 10:00 PM</p>
+                            <p>📍 District 10, HCMC</p>
+                            <p>💵 From 100,000đ</p>
+                        </div>
+                    </div>
+                    <div class="slider-slide">
+                        <div class="image-container">
+                            <img src="/assets/image/restaurant.png" alt="Restaurant 2">
+                            <button id="heart" class="heart-btn" onclick="toggleHeart(this)">
+                                <img src="/assets/icon/heart.svg" alt="Heart icon">
+                            </button>
+                        </div>
+                        <div class="text-container">
+                            <h3>Mama Ngon - Luxury Restaurant</h3>
+                            <p>⏰ 9:00 AM - 10:00 PM</p>
+                            <p>📍 District 2, HCMC</p>
+                            <p>💵 From 200,000đ</p>
+                        </div>
+                    </div>
+                    <div class="slider-slide">
+                        <div class="image-container">
+                            <img src="/assets/image/restaurant.png" alt="Restaurant 3">
+                            <button id="heart" class="heart-btn" onclick="toggleHeart(this)">
+                                <img src="/assets/icon/heart.svg" alt="Heart icon">
+                            </button>
+                        </div>
+                        <div class="text-container">
+                            <h3>Mama Ngon - Luxury Restaurant</h3>
+                            <p>⏰ 9:00 AM - 10:00 PM</p>
+                            <p>📍 District 10, HCMC</p>
+                            <p>💵 From 100,000đ</p>
+                        </div>
+                    </div>   
+                    <!-- Add more slides as needed -->
+                </div>
+                <button class="slider-btn next">
+                    <img src="/assets/icon/right-arrow.svg" alt="Right" width="24" height="24">
+                </button>
+            </div>
+        </div>        
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">×</span>
+            <h2>Edit Profile</h2>
+            <div class="modal-body">
+                <div class="profile-info-section">
+                    <h3>Profile Information</h3>
+                    <div class="profile-pic-edit">
+                       <img id="profile-image-preview" src="/assets/image/user.png" alt="Current Profile Picture" >
+                       <div>
+                           <input type="file" id="profile-image-input" accept="image/png, image/jpeg" style="display: none;" onchange="loadProfileImage(event)">
+                           <button onclick="document.getElementById('profile-image-input').click()" >Upload Photo</button>
+                           <button onclick="removeProfileImage()">Remove</button>
+                       </div>
+                   </div>
+                    <label for="fullname">Full name</label>
+                    <input type="text" id="fullname" value="{{user.fullname}}">
+                    <label for="email">Email address</label>
+                    <input type="text" id="email" value="{{user.email}}" readonly>
+                    <label for="date-of-birth">Date of birth</label>
+                    <input type="date" id="date-of-birth" value="{{{formatDateToISO user.dateOfBirth}}}">
+                    <label for="location">Location</label>
+                    <select id="location" multiple>
+                       <option value="Thu Duc City">Thu Duc City</option>
+                        <option value="District 1">District 1</option>
+                        <option value="District 2">District 2</option>
+                        <option value="District 3">District 3</option>
+                        <option value="District 4">District 4</option>
+                        <option value="District 5">District 5</option>
+                        <option value="District 6">District 6</option>
+                        <option value="District 7">District 7</option>
+                        <option value="District 8">District 8</option>
+                        <option value="District 10">District 10</option>
+                        <option value="District 11">District 11</option>
+                        <option value="District 12">District 12</option>
+                        <option value="Binh Thanh District">Binh Thanh District</option>
+                        <option value="Tan Binh District">Tan Binh District</option>
+                        <option value="Tan Phu District">Tan Phu District</option>
+                        <option value="Go Vap District">Go Vap District</option>
+                        <option value="Binh Chanh District">Binh Chanh District</option>
+                        <option value="Cu Chi District">Cu Chi District</option>
+                        <option value="Hoc Mon District">Hoc Mon District</option>
+                        <option value="Nha Be District">Nha Be District</option>
+                     </select>
+                    
+                    <div class="modal-footer">
+                        <button class="save-button" onclick="saveChanges()">Update Profile</button>
+                        <button class="cancel-button" onclick="closeEditModal()">Cancel</button>
+                    </div>
+                    <div class="message-success" id="message-profile"></div>
+                </div>
+                <div class="password-section">
+                    <h3>Change Password</h3>
+                     <label for="current-password">Current Password</label>
+                     <div class="password-input">
+                        <input type="password" id="current-password" autocomplete="off">
+                        <span class="password-toggle" onclick="togglePasswordVisibility('current-password')">
+                           <i class="fas fa-eye" id="eye-icon-current-password"></i>
+                        </span>
+                     </div>
+                    <label for="new-password">New Password</label>
+                     <div class="password-input">
+                        <input type="password" id="new-password" >
+                         <span class="password-toggle" onclick="togglePasswordVisibility('new-password')">
+                           <i class="fas fa-eye" id="eye-icon-new-password"></i>
+                         </span>
+                     </div>
+                    <label for="confirm-new-password">Confirm New Password</label>
+                     <div class="password-input">
+                         <input type="password" id="confirm-new-password">
+                         <span class="password-toggle" onclick="togglePasswordVisibility('confirm-new-password')">
+                           <i class="fas fa-eye" id="eye-icon-confirm-new-password"></i>
+                         </span>
+                    </div>
+                     <button class="save-button" onclick="changePassword()">Change password</button>
+                     <div class="message-success" id="message-password"></div>
+                 </div>
+                
+            </div>
+             
+        </div>
+    </div>
+
+</div>
+<script>
+    function toggleHeart(button) {
+        const heartIcon = button.querySelector("img");
+        if (heartIcon.src.includes("heart.svg")) {
+            // Switch to filled heart icon
+            heartIcon.src = "/assets/icon/heart-filled.svg";
+            button.style.backgroundColor = '#fe6969';
+        } else {
+            // Switch back to unfilled heart icon
+            heartIcon.src = "/assets/icon/heart.svg";
+            button.style.backgroundColor = '#8d8d8d';
+        }
+    }
+
+    function openEditModal() {
+        var modal = document.getElementById("editModal");
+        modal.style.display = "block";
+    }
+    function closeEditModal() {
+        var modal = document.getElementById("editModal");
+        modal.style.display = "none";
+    }
+
+    function logout() {
+        
+        $.ajax({
+            url: '/logout',
+            type: 'GET',
+            success: function(res) {
+                localStorage.clear();
+            },
+            error: function(error) {
+                console.error('Error:', error);
+                console.log(error);
+            }
+        });
+        window.location.href = '/';
+    }
+    // Function to save changes
+    function saveChanges() {
+    // Implement saving logic here
+        const fullname = $('#fullname').val();
+        const dateOfBirth = $('#date-of-birth').val() || '';
+        const districts = $('#location').val() || [];
+        if (!districts)
+            districts = [];
+        if (fullname)
+            $.ajax({
+                url: '/editprofile',
+                type: 'POST',
+                data: {
+                    fullname: fullname, 
+                    dateOfBirth: dateOfBirth, 
+                    districts: districts, 
+                },
+                success: function(user) {
+                    localStorage.setItem('fullname', user.fullname);
+                    let message = document.getElementById('message-profile');
+                    message.classList.remove('message-error');
+                    message.classList.add('message-success');
+                    message.textContent = "Profile updated successfully. Reload the page to apply changes.";
+                },
+                error: function(error) {
+                    let message = document.getElementById('message-profile');
+                    message.classList.remove('message-success');
+                    message.classList.add('message-error');
+                    message.textContent = "Error updating profile";
+                    console.error('Error:', error);
+                    console.log(error);
+                }
+            });
+        else {
+            let message = document.getElementById('message-profile');
+            message.classList.remove('message-success');
+            message.classList.add('message-error');
+            message.textContent = "Fullname must not left empty";
+        }
+        //closeEditModal(); // Close modal after saving
+    }
+    function changePassword() {
+        const currentPassword = $('#current-password').val();
+        const newPassword = $('#new-password').val();
+        const confirmNewPassword = $('#confirm-new-password').val();
+        
+
+        //if (!districts)
+        //    districts = [];
+        //if (fullname)
+            $.ajax({
+                url: '/changepassword',
+                type: 'POST',
+                data: {
+                    currentPassword: currentPassword, 
+                    newPassword: newPassword, 
+                    confirmNewPassword: confirmNewPassword, 
+                },
+                success: function(res) {
+                    let message = document.getElementById('message-password');
+                    message.classList.remove('message-error');
+                    message.classList.add('message-success');
+                    message.textContent = res.message;
+                },
+                error: function(xhr, status, error) {
+                    let message = document.getElementById('message-password');
+                    message.classList.remove('message-success');
+                    message.classList.add('message-error');
+                    message.textContent = xhr.responseJSON.message;
+                    console.error('Error:', xhr.responseJSON.message);
+                    console.log(error);
+                }
+            });
+        //else {
+        //    let message = document.getElementById('message-profile');
+        //    message.classList.remove('message-success');
+        //    message.classList.add('message-error');
+        //    message.textContent = "Fullname must not left empty";
+        //}
+    }
+    // Function to load profile image preview
+    function loadProfileImage(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+        
+    reader.onload = function(e) {
+            document.getElementById('profile-image-preview').src = e.target.result;
+    }
+    if (file) {
+        reader.readAsDataURL(file);
+    }
+    }
+
+    // Function to remove profile image
+    function removeProfileImage() {
+        document.getElementById('profile-image-preview').src = "../asset/image/ava.png";
+        document.getElementById('profile-image-input').value = '';
+    }
+    function togglePasswordVisibility(inputId) {
+    const passwordInput = document.getElementById(inputId);
+    const passwordToggle = passwordInput.nextElementSibling;
+    const eyeIcon = passwordToggle.querySelector('i');
+
+    if (passwordInput.type === "password") {
+        passwordInput.type = "text";
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = "password";
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+    }
+    }
+</script>
