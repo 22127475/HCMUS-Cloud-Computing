@@ -110,9 +110,9 @@ AWS.config.update({
 });
 const db = new AWS.DynamoDB.DocumentClient();
 
-const uploadItemToDB = (item) => {
+const uploadItemToDB = (table, item) => {
   const params = {
-    TableName: tableName,
+    TableName: table,
     Item: item,
   };
   console.log(params);
@@ -125,11 +125,11 @@ const uploadItemToDB = (item) => {
   });
 };
 
-const getItemById = async (value) => {
+const getItemById = async (table, value) => {
   const params = {
-    TableName: tableName,
+    TableName: table,
     Key: {
-      id: value,
+      _id: value,
     },
   };
 
@@ -137,15 +137,15 @@ const getItemById = async (value) => {
     const { Item = {} } = await db.get(params).promise();
     return { success: true, data: Item };
   } catch (error) {
-    return { success: false, data: null };
+    return { success: false, data: error };
   }
 };
 
-const deleteItemById = async (value) => {
+const deleteItemById = async (table, value) => {
   const params = {
-    TableName: tableName,
+    TableName: table,
     Key: {
-      id: value,
+      _id: value,
     },
   };
 
