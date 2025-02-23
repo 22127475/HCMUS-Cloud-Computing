@@ -6,18 +6,17 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import connectDB from './config/db.js';
-import {loginUser, signupUser, handle_submit_onboarding, handle_edit_profile, handle_change_password} from './controllers/userController.js';
+import {loginUser, signupUser, handle_submit_onboarding, handle_edit_profile, handle_change_password, getUser} from './controllers/userController.js';
 import {getLocations} from './controllers/locationController.js'; //merge with branch quynh-huong-2106
-import {createPlan, getTags, generatePlan} from './controllers/planController.js'; //
-import {getUser} from './controllers/userController.js';
-import {Users} from './models/userModel.js';
-import {Locations} from './models/locationModel.js';
+import {createPlan, generatePlan} from './controllers/planController.js'; //
+import {scanTable, uploadItemToDB} from './aws_api.js';
+//import {Users} from './models/userModel.js';
+//import {Locations} from './models/locationModel.js';
 
-dotenv.config();
-connectDB();
+//dotenv.config();
+//connectDB();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -124,8 +123,21 @@ global.tagData = [];
 global.userData = [];
 global.genPlan = null;
 
-// Định nghĩa route cho đường dẫn gốc ("/")
+// --- Moved getTagsFromDynamoDB function from aws_api.js here ---
+const getTagsFromDynamoDB = async (tableNameTag) => {
+  try {
+      const tagScanResult = await scanTable(tableNameTag);
+      if (tagScanResult.success) {
+          return { success: true, data: tagScanResult.data }; // Return success object
+      } else {
+          return { success: false, data: tagScanResult.data }; // Return failure object
+      }
+  } catch (error) {
+      return { success: false, data: error }; // Return failure object on exception
+  }
+};
 
+// Định nghĩa route cho đường dẫn gốc ("/")
 app.get('/signin', (req, res) => {
   if (req.session.user)
     res.redirect('/');
@@ -172,8 +184,19 @@ app.get("/homepage", async (req, res) => {
   let userLastName;
   if (req.session.user)
   {
-    let userData = await Users.findOne({email: req.session.user});
-    let userFullName = userData.fullname;
+    // let userData = await Users.findOne({email: req.session.user});
+    // let userFullName = userData.fullname;
+    // userFullName = userFullName.split(' ');
+    // userLastName = userFullName[userFullName.length -1];
+
+    let userData = null;
+    const userScanResult = await scanTable('USER'); // Scan USER table in DynamoDB
+    if (userScanResult.success) {
+      const users = userScanResult.data;
+      userData = users.find(u => u.email === req.session.user); // Find user by email
+    }
+
+    let userFullName = userData ? userData.fullname : ""; // Get fullname from DynamoDB item
     userFullName = userFullName.split(' ');
     userLastName = userFullName[userFullName.length -1];
   }
@@ -190,11 +213,25 @@ app.get("/homepage", async (req, res) => {
 app.get("/planning", async (req, res) => {
 
     if (req.session.user){
-      let userData = await Users.findOne({email: req.session.user});
+      // let userData = await Users.findOne({email: req.session.user});
+
+      // res.render("planning", {
+      //   title: "Planning",
+      //   userID: userData._id,
+      //   hasLayout: true,
+      //   css: "/css/planning.css",
+      // });
+
+      let userData = null;
+      const userScanResult = await scanTable('USER'); // Scan USER table in DynamoDB
+      if (userScanResult.success) {
+        const users = userScanResult.data;
+        userData = users.find(u => u.email === req.session.user); // Find user by email
+      }
 
       res.render("planning", {
         title: "Planning",
-        userID: userData._id,
+        userID: userData ? userData._id : null, // Get _id from DynamoDB item
         hasLayout: true,
         css: "/css/planning.css",
       });
@@ -228,11 +265,25 @@ app.get('/generatePlan', generatePlan);
 
 app.get("/profile", async (req, res) => {
   if (req.session.user){
-     let userData = await Users.findOne({email: req.session.user});
+    //  let userData = await Users.findOne({email: req.session.user});
+    //  console.log(userData);
+    //  res.render("profile", {
+    //      title: "Profile",
+    //      user: userData,
+    //      hasLayout: true,
+    //      css: "/css/profile.css",
+    //  });
+
+    let userData = null;
+     const userScanResult = await scanTable('USER'); // Scan USER table in DynamoDB
+     if (userScanResult.success) {
+       const users = userScanResult.data;
+       userData = users.find(u => u.email === req.session.user); // Find user by email
+     }
      console.log(userData);
      res.render("profile", {
          title: "Profile",
-         user: userData,
+         user: userData, // Pass DynamoDB user item to template
          hasLayout: true,
          css: "/css/profile.css",
      });
@@ -252,27 +303,60 @@ app.get("/locationdetails", (req, res) => {
 app.post('/submit_onboarding', handle_submit_onboarding);
 
 // Load locations data
-getLocations()
-  .then(locations => {
-    global.locationData = locations;
-    // console.log('Locations loaded and stored in global variable:', global.locationData[0]);
-  })
-  .catch(error => {
+// getLocations()
+//   .then(locations => {
+//     global.locationData = locations;
+//     // console.log('Locations loaded and stored in global variable:', global.locationData[0]);
+//   })
+//   .catch(error => {
+//     console.error('Error loading locations:', error);
+// });
+
+// Load locations data - DynamoDB version
+async function loadLocationsData() {
+  try {
+    const locationScanResult = await scanTable('LOCATIONS'); // Scan LOCATIONS table in DynamoDB
+    if (locationScanResult.success) {
+      global.locationData = locationScanResult.data; // Store DynamoDB items in global variable
+      console.log('Locations loaded and stored in global variable:', global.locationData.length, "items");
+    } else {
+      console.error('Error loading locations:', locationScanResult.data);
+    }
+  } catch (error) {
     console.error('Error loading locations:', error);
-});
+  }
+}
+
+
 app.get('/locations', async (req, res) => {
   res.json(global.locationData);
 });
 
 // Load users data
-getUser()
-  .then(users => {
-    global.userData = users;
-    // console.log('Users loaded and stored in global variable:', global.userData[0]);
-  })
-  .catch(error => {
+// getUser()
+//   .then(users => {
+//     global.userData = users;
+//     // console.log('Users loaded and stored in global variable:', global.userData[0]);
+//   })
+//   .catch(error => {
+//     console.error('Error loading users:', error);
+// });
+
+// Load users data - DynamoDB version
+async function loadUsersData() {
+  try {
+    const userScanResult = await scanTable('USER'); // Scan USER table in DynamoDB
+    if (userScanResult.success) {
+      global.userData = userScanResult.data; // Store DynamoDB items in global variable
+      console.log('Users loaded and stored in global variable:', global.userData.length, "items");
+    } else {
+      console.error('Error loading users:', userScanResult.data);
+    }
+  } catch (error) {
     console.error('Error loading users:', error);
-});
+  }
+}
+
 app.get('/users', async (req, res) => {
   res.json(global.userData);
 });
@@ -288,14 +372,33 @@ app.get('/getCurrentUser1', async (req, res) => {
 });
 
 // Load tags data
-getTags()
-  .then(tags => {
-    global.tagData = tags;
-    // console.log('Tags loaded and stored in global variable:', global.tagData[0]);
-  })
-  .catch(error => {
+// getTags()
+//   .then(tags => {
+//     global.tagData = tags;
+//     // console.log('Tags loaded and stored in global variable:', global.tagData[0]);
+//   })
+//   .catch(error => {
+//     console.error('Error loading tags:', error);
+// });
+// app.get('/tags', async (req, res) => {
+//   res.json(global.tagData);
+// });
+
+// Load tags data - DynamoDB version using moved getTagsFromDynamoDB function
+async function loadTagsData() {
+  try {
+    const tagsResponse = await getTagsFromDynamoDB('TAG'); // Use moved getTagsFromDynamoDB here
+    if (tagsResponse.success) {
+      global.tagData = tagsResponse.data;
+      console.log('Tags loaded and stored in global variable:', global.tagData.length, "items");
+    } else {
+      console.error('Error loading tags:', tagsResponse.data);
+    }
+  } catch (error) {
     console.error('Error loading tags:', error);
-});
+  }
+}
+
 app.get('/tags', async (req, res) => {
   res.json(global.tagData);
 });
@@ -359,38 +462,50 @@ app.post('/changepassword', handle_change_password);
 
 app.get('/getCurrentUserData', async(req, res) => {
   if (req.session.user) {
-    const currentUserData = await Users.findOne({email: req.session.user});
+    // const currentUserData = await Users.findOne({email: req.session.user});
+    // console.log(currentUserData);
+    // res.status(200).json(currentUserData);
+
+    let currentUserData = null;
+    const userScanResult = await scanTable('USER'); // Scan USER table in DynamoDB
+    if (userScanResult.success) {
+      const users = userScanResult.data;
+      currentUserData = users.find(u => u.email === req.session.user); // Find user by email
+    }
     console.log(currentUserData);
-    res.status(200).json(currentUserData);
+    res.status(200).json(currentUserData); // Send DynamoDB user item
   } else {
     res.status(401).json({ message: 'User not authenticated' });
   }
 })
 //merge with branch quynh-huong-2106
 
-getLocations()
-  .then(locations => {
-    global.locationData = locations;
-    // console.log('Locations loaded and stored in global variable:', global.locationData[0]);
-  })
-  .catch(error => {
-    console.error('Error loading locations:', error);
-});
+// Load Locations and Users data when app starts
+loadLocationsData();
+loadUsersData();
+loadTagsData();
+
+// getLocations()
+//   .then(locations => {
+//     global.locationData = locations;
+//     // console.log('Locations loaded and stored in global variable:', global.locationData[0]);
+//   })
+//   .catch(error => {
+//     console.error('Error loading locations:', error);
+// });
 
 app.get('/locations', async (req, res) => {
   res.json(global.locationData);
 });
 
-
-getTags()
-  .then(tags => {
-    global.tagData = tags;
-    // console.log('Tags loaded and stored in global variable:', global.tagData[0]);
-  })
-  .catch(error => {
-    console.error('Error loading tags:', error);
-});
-
+// getTags()
+//   .then(tags => {
+//     global.tagData = tags;
+//     // console.log('Tags loaded and stored in global variable:', global.tagData[0]);
+//   })
+//   .catch(error => {
+//     console.error('Error loading tags:', error);
+// });
 
 app.get('/tags', async (req, res) => {
   res.json(global.tagData);
@@ -406,39 +521,85 @@ app.get('/add-location', (req, res) => {
 });
 
 // Route to handle form submission
+// app.post('/add-location', async (req, res) => {
+//   try {
+//       const { id, name, address, district, tag, phone, rating, reviews, price, description, site, photo, logo, link } = req.body;
+
+//       // Generate a UUID for the _id field
+//       // const locationId = uuidv4();
+
+//       // Create a new location document
+//       const newLocation = new Locations({
+//           _id: id, // Use the generated UUID
+//           name,
+//           address,
+//           district,
+//           tag,
+//           phone,
+//           rating: parseFloat(rating),
+//           reviews: parseInt(reviews),
+//           price: parseInt(price),
+//           description,
+//           site,
+//           photo,
+//           logo,
+//           link,
+//       });
+
+//       // Save the new location to the database
+//       await newLocation.save();
+
+//       // Optionally, update the global locationData array
+//       global.locationData.push(newLocation);
+
+//       // Redirect to the homepage or a success page
+//       res.redirect('/homepage');
+//   } catch (error) {
+//       console.error('Error adding location:', error);
+//       res.status(500).send('An error occurred while adding the location.');
+//   }
+// });
+
+// Route to handle form submission - Modified to use DynamoDB
 app.post('/add-location', async (req, res) => {
   try {
-      const { id, name, address, district, tag, phone, rating, reviews, price, description, site, photo, logo, link } = req.body;
+      const { id, name, address, district, tag, phone, rating, reviews, price, description, site, photo, logo, link, workingHours } = req.body;
 
-      // Generate a UUID for the _id field
-      // const locationId = uuidv4();
+      // Create a new location item object for DynamoDB
+      const newLocationItem = {
+          _id: id, // Use the id from the form, assuming it's meant to be the _id
+          name: name || null, // Handle cases where fields might be empty
+          address: address || null,
+          district: district || null,
+          tag: tag || null,
+          phone: phone || null,
+          rating: parseFloat(rating) || 0, // Ensure rating is a number, default to 0 if not valid
+          reviews: parseInt(reviews) || 0,   // Ensure reviews is an integer, default to 0 if not valid
+          price: parseInt(price) || 0,       // Ensure price is an integer, default to 0 if not valid
+          description: description || null,
+          site: site || null,
+          photo: photo || null,
+          logo: logo || null,
+          link: link || null,
+          workingHours: workingHours || null,
+      };
 
-      // Create a new location document
-      const newLocation = new Locations({
-          _id: id, // Use the generated UUID
-          name,
-          address,
-          district,
-          tag,
-          phone,
-          rating: parseFloat(rating),
-          reviews: parseInt(reviews),
-          price: parseInt(price),
-          description,
-          site,
-          photo,
-          logo,
-          link,
-      });
+      // Save the new location to DynamoDB using uploadItemToDB
+      const uploadResult = await uploadItemToDB('LOCATIONS', newLocationItem);
 
-      // Save the new location to the database
-      await newLocation.save();
+      if (uploadResult && uploadResult.success) {
+          console.log('Location added to DynamoDB successfully:', newLocationItem._id);
 
-      // Optionally, update the global locationData array
-      global.locationData.push(newLocation);
+          // Optionally, update the global locationData array by refetching from DynamoDB
+          await loadLocationsData(); // Refetch all locations to update global data
 
-      // Redirect to the homepage or a success page
-      res.redirect('/homepage');
+          // Redirect to the homepage or a success page
+          res.redirect('/homepage');
+      } else {
+          console.error('Error adding location to DynamoDB:', uploadResult ? uploadResult.data : 'Upload result is undefined');
+          res.status(500).send('Failed to add location to DynamoDB.');
+      }
+
   } catch (error) {
       console.error('Error adding location:', error);
       res.status(500).send('An error occurred while adding the location.');

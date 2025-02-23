@@ -110,19 +110,53 @@ AWS.config.update({
 });
 const db = new AWS.DynamoDB.DocumentClient();
 
+// const uploadItemToDB = (table, item) => {
+//   const params = {
+//     TableName: table,
+//     Item: item,
+//   };
+//   console.log(params);
+//   db.put(params, (err, data) => {
+//     if (err) {
+//       console.log("Error", err);
+//       return;
+//     }
+//     console.log("Success", data);
+//   });
+// };
+
+// Modified uploadItemToDB to return a Promise
 const uploadItemToDB = (table, item) => {
   const params = {
     TableName: table,
     Item: item,
   };
   console.log(params);
-  db.put(params, (err, data) => {
-    if (err) {
-      console.log("Error", err);
-      return;
-    }
-    console.log("Success", data);
+  return new Promise((resolve, reject) => { // Return a Promise
+    db.put(params, (err, data) => {
+      if (err) {
+        console.log("Error", err);
+        reject({ success: false, data: err }); // Reject promise on error
+        return;
+      }
+      console.log("Success", data);
+      resolve({ success: true, data: data }); // Resolve promise on success
+    });
   });
+};
+
+// New standalone function to get tags from DynamoDB
+const getTagsFromDynamoDB = async (tableNameTag) => {
+  try {
+      const tagScanResult = await scanTable(tableNameTag);
+      if (tagScanResult.success) {
+          return { success: true, data: tagScanResult.data }; // Return success object
+      } else {
+          return { success: false, data: tagScanResult.data }; // Return failure object
+      }
+  } catch (error) {
+      return { success: false, data: error }; // Return failure object on exception
+  }
 };
 
 const getItemById = async (table, value) => {
@@ -157,6 +191,28 @@ const deleteItemById = async (table, value) => {
   }
 };
 
+const scanTable = async (tableName) => {
+  const params = {
+    TableName: tableName,
+  };
+
+  try {
+    let scanResults = [];
+    let items;
+    do {
+      items = await db.scan(params).promise();
+      items.Items.forEach((item) => scanResults.push(item));
+      params.ExclusiveStartKey = items.LastEvaluatedKey;
+    } while (typeof items.LastEvaluatedKey != "undefined");
+
+    console.log(`Successfully scanned table ${tableName}`);
+    return { success: true, data: scanResults };
+  } catch (error) {
+    console.error("Error scanning table", tableName, error);
+    return { success: false, data: error };
+  }
+};
+
 export {
   uploadItemToS3,
   getItemFromS3,
@@ -164,4 +220,6 @@ export {
   uploadItemToDB,
   getItemById,
   deleteItemById,
+  scanTable,
+  getTagsFromDynamoDB,
 };

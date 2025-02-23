@@ -1,7 +1,7 @@
 import Utils from '../utils/utils.js';
-import PlanDataset from './planDataset.js';
 import LocationDataset from './locationDataset.js';
-import {Plans} from '../models/planModel.js';
+import { createPlan, generatePlan } from '../controllers/planController.js'; // Import createPlan và getTags
+//import {Plans} from '../models/planModel.js';
 
 class Plan {
   constructor(
