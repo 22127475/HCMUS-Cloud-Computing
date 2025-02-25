@@ -322,6 +322,14 @@ function updateDisplayGroup(locations, groupIndex, groupName) {
                   <div class="heart-icon">
                       <span class="icon">❤️</span>
                   </div>
+                  <div class="edit-delete-buttons">  <!-- ADDED -->
+                    <button onclick="editLocation('${location._id}')"> <!-- ADDED -->
+                        <img src="/assets/icon/edit-button.svg" alt="Edit" /> <!-- ADDED -->
+                    </button> <!-- ADDED -->
+                    <button onclick="deleteLocation('${location._id}')"> <!-- ADDED -->
+                        <img src="/assets/icon/delete-button.svg" alt="Delete" /> <!-- ADDED -->
+                    </button> <!-- ADDED -->
+                </div>  <!-- ADDED -->
               </div>
               <div class="location-details">
                   <div class="location-name">${location.name}</div>
@@ -346,4 +354,29 @@ function updateDisplayGroup(locations, groupIndex, groupName) {
 
 function formatPrice(price) {
     return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function editLocation(locationId) {
+    window.location.href = `/edit-location/${locationId}`; // Redirect to edit route
+}
+
+function deleteLocation(locationId) {
+    if (confirm('Are you sure you want to delete this location?')) {
+        fetch(`/delete-location/${locationId}`, { // Call delete route
+            method: 'POST', // Or 'DELETE', but using POST for form-like submission for simplicity
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log('Location deleted successfully');
+                fetchLocations(); // Refresh location list after delete
+            } else {
+                console.error('Failed to delete location');
+                alert('Failed to delete location.');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting location:', error);
+            alert('Error deleting location.');
+        });
+    }
 }

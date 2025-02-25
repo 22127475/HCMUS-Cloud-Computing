@@ -11,6 +11,22 @@ const tableNamePlan = 'PLAN';
 const tableNameTag = 'TAG';
 const tableNameAvgTime = 'AVERAGE_SPENDING_TIME';
 
+// --- New function to load Average Spending Time data from DynamoDB ---
+const getAvgSpendingTimeData = async () => {
+  try {
+    const avgTimeScanResult = await scanTable(tableNameAvgTime);
+    if (avgTimeScanResult.success) {
+      return { success: true, data: avgTimeScanResult.data };
+    } else {
+      console.error("Error fetching Average Spending Time data from DynamoDB:", avgTimeScanResult.data);
+      return { success: false, data: avgTimeScanResult.data };
+    }
+  } catch (error) {
+    console.error("Error getting Average Spending Time data:", error);
+    return { success: false, data: error };
+  }
+};
+
 // Send data to the server
 // const createPlan = async (req, res) => {
 //   try {
@@ -86,12 +102,41 @@ const generatePlan = async (req, res) => {
       // Lấy userId từ req
       let userData;
       if(req.session.user) {
-        userData = await Users.findOne({email: req.session.user});
+        //userData = await Users.findOne({email: req.session.user});
+
+        const userResponse = await getUser(req, res); // Pass req and res
+        if (userResponse.success) {
+          //userData = userResponse.data; // Access user data from response
+          userData = userResponse.data.find(u => u.email === req.session.user);
+        } else {
+          console.error("Error fetching user data in generatePlan:", userResponse);
+          return res.status(500).send({ message: 'Error fetching user data' }); // Handle error if getUser fails
+        }
       }
+      
+      if (!userData) { // Check if userData is still null after getUser call
+        return res.status(404).send({ message: 'User data not found for session user.' });
+      }
+
       const userId = userData._id;
       console.log('userId:', userId);
       // Find the most recent plan for the user based on plan id (format: yymmdd-hhmmss)
-      const mostRecentPlan = await Plans.findOne({ PLAN_USER: userId }).sort({ _id: -1 });
+      //const mostRecentPlan = await Plans.findOne({ PLAN_USER: userId }).sort({ _id: -1 });
+      
+      // Find the most recent plan for the user based on plan id (format: yymmdd-hhmmss) - DynamoDB Version
+      let mostRecentPlan = null;
+      const planScanResult = await scanTable(tableNamePlan); // Scan all plans from DynamoDB
+      if (planScanResult.success) {
+        const userPlans = planScanResult.data.filter(plan => plan.PLAN_USER === userId); // Filter plans by PLAN_USER
+        if (userPlans.length > 0) {
+          userPlans.sort((a, b) => b._id.localeCompare(a._id)); // Sort by _id (plan ID - format: yymmdd-hhmmss) DESCENDING
+          mostRecentPlan = userPlans[0]; // Get the first (most recent) plan
+        }
+      } else {
+        console.error("Error scanning PLAN table:", planScanResult.data);
+        return res.status(500).send({ message: 'Error fetching plans from database' }); // Handle error if scanTable fails
+      }
+
       console.log('Most recent plan:', mostRecentPlan);
 
       if (!mostRecentPlan) {
@@ -105,14 +150,24 @@ const generatePlan = async (req, res) => {
       // );
       // await planDataset.initialize();
 
+      // const plan = new Plan(
+      //     planId,
+      //     planDataset,
+      //     locationDataset,
+      //     maxPoolSize,
+      //     budgetTimeRatio,
+      //     budgetProbThreshold,
+      //     timeThreshold
+      // );
+
       const plan = new Plan(
-          planId,
-          planDataset,
-          locationDataset,
-          maxPoolSize,
-          budgetTimeRatio,
-          budgetProbThreshold,
-          timeThreshold
+        mostRecentPlan,
+        locationDataset,
+        avgTimePerLocation,
+        maxPoolSize,
+        budgetTimeRatio,
+        budgetProbThreshold,
+        timeThreshold
       );
 
       // console.log('LocationDataset:', locationDataset.data);

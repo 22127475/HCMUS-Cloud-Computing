@@ -15,9 +15,9 @@ class Plan {
   ) {
 
     // kiểm tra planDocument có phải database Plans không
-    if (!(planDocument instanceof Plans)) {
-      throw new Error('Invalid plan document.');
-    }
+    // if (!(planDocument instanceof Plans)) {
+    //   throw new Error('Invalid plan document.');
+    // }
 
     this.id = planDocument._id;
     this.budget = parseFloat(planDocument.PLAN_MAXBUDGET) || 1000;

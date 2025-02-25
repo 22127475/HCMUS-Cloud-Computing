@@ -1,0 +1,273 @@
+{{!-- <div class="container">
+    <h1>Edit Location</h1>
+    <form action="/edit-location/{{location._id}}" method="POST" class="add-location-form">
+        <div class="form-group">
+            <label for="id">ID:</label>
+            <input type="text" id="id" name="id" value="{{location._id}}" readonly required>
+        </div>
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" value="{{location.name}}" required>
+        </div>
+        <div class="form-group">
+            <label for="address">Address:</label>
+            <input type="text" id="address" name="address" value="{{location.address}}" required>
+        </div>
+        <div class="form-group">
+            <label for="district">District:</label>
+            <input type="text" id="district" name="district" value="{{location.district}}" required>
+        </div>
+        <div class="form-group">
+            <label for="tag">Tag:</label>
+            <input type="text" id="tag" name="tag" value="{{location.tag}}" required>
+        </div>
+        <div class="form-group">
+            <label for="phone">Phone:</label>
+            <input type="text" id="phone" name="phone" value="{{location.phone}}" required>
+        </div>
+        <div class="form-group">
+            <label for="rating">Rating:</label>
+            <input type="number" id="rating" name="rating" step="0.1" value="{{location.rating}}" required>
+        </div>
+        <div class="form-group">
+            <label for="reviews">Reviews:</label>
+            <input type="number" id="reviews" name="reviews" value="{{location.reviews}}" required>
+        </div>
+        <div class="form-group">
+            <label for="price">Price:</label>
+            <input type="number" id="price" name="price" value="{{location.price}}" required>
+        </div>
+        <div class="form-group">
+            <label for="description">Description:</label>
+            <textarea id="description" name="description">{{location.description}}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="site">Site:</label>
+            <input type="text" id="site" name="site" value="{{location.site}}">
+        </div>
+        <div class="form-group">
+            <label for="photo">Photo URL:</label>
+            <input type="text" id="photo" name="photo" value="{{location.photo}}">
+        </div>
+        <div class="form-group">
+            <label for="logo">Logo URL:</label>
+            <input type="text" id="logo" name="logo" value="{{location.logo}}">
+        </div>
+        <div class="form-group">
+            <label for="link">Link URL:</label>
+            <input type="text" id="link" name="link" value="{{location.link}}">
+        </div>
+        <div class="form-group">
+            <label for="workingHours">Working Hours:</label>
+            <input type="text" id="workingHours" name="workingHours" value="{{location.workingHours}}">
+        </div>
+
+        <button type="submit" class="submit-button">Update Location</button>
+        <a href="/homepage" class="cancel-button">Cancel</a>
+    </form>
+</div>
+
+.container {
+    width: 80%;
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+}
+
+.form-group {
+    margin-bottom: 10px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="url"],
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensures padding and border are included in the element's total width and height */
+}
+
+.form-group textarea {
+    height: 100px;
+}
+
+button[type="submit"] {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button[type="submit"]:hover {
+    background-color: #45a049;
+}
+
+a {
+    display: inline-block;
+    margin-top: 10px;
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+</style> --}}
+
+<!-- views/add-location.hbs -->
+<div class="add-location-container">
+  <h1>Edit Location</h1>
+
+  <form id="edit-location-form" action="/edit-location/{{location._id}}" method="POST">
+    <div class="form-group">
+      <label for="id">ID:</label>
+      <input type="text" id="id" name="id" required>
+    </div>
+
+    <div class="form-group">
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" required>
+    </div>
+
+    <div class="form-group">
+      <label for="address">Address:</label>
+      <input type="text" id="address" name="address" required>
+    </div>
+
+    <div class="form-group">
+      <label for="district">District:</label>
+      <input type="text" id="district" name="district" required>
+    </div>
+
+    <div class="form-group">
+      <label for="tag">Tag (Comma-separated Tag IDs):</label>
+      <input type="text" id="tag" name="tag" required>
+      <small>Enter Tag IDs separated by commas (e.g., tag1, tag2, tag3)</small>
+    </div>
+
+    <div class="form-group">
+      <label for="phone">Phone:</label>
+      <input type="text" id="phone" name="phone" required>
+    </div>
+
+    <div class="form-group">
+      <label for="rating">Rating:</label>
+      <input type="number" id="rating" name="rating" step="0.1" min="0" max="5" required>
+    </div>
+
+    <div class="form-group">
+      <label for="reviews">Reviews:</label>
+      <input type="number" id="reviews" name="reviews" required>
+    </div>
+
+    <div class="form-group">
+      <label for="price">Price:</label>
+      <input type="number" id="price" name="price" required>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description:</label>
+      <textarea id="description" name="description"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="site">Site URL:</label>
+      <input type="url" id="site" name="site">
+    </div>
+
+    <div class="form-group">
+      <label for="photo">Photo URL:</label>
+      <input type="url" id="photo" name="photo">
+    </div>
+
+    <div class="form-group">
+      <label for="logo">Logo URL:</label>
+      <input type="url" id="logo" name="logo">
+    </div>
+
+    <div class="form-group">
+      <label for="link">External Link:</label>
+      <input type="url" id="link" name="link">
+    </div>
+
+    <button type="submit">Edit Location</button>
+  </form>
+
+  <a href="/homepage">Cancel</a>
+</div>
+
+<style>
+/* public/css/add-location.css */
+.edit-location-container {
+    width: 80%;
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+}
+
+.form-group {
+    margin-bottom: 10px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="url"],
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensures padding and border are included in the element's total width and height */
+}
+
+.form-group textarea {
+    height: 100px;
+}
+
+button[type="submit"] {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button[type="submit"]:hover {
+    background-color: #45a049;
+}
+
+a {
+    display: inline-block;
+    margin-top: 10px;
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+</style>
+

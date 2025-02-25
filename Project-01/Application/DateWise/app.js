@@ -9,7 +9,7 @@ import connectDB from './config/db.js';
 import {loginUser, signupUser, handle_submit_onboarding, handle_edit_profile, handle_change_password, getUser} from './controllers/userController.js';
 import {getLocations} from './controllers/locationController.js'; //merge with branch quynh-huong-2106
 import {createPlan, generatePlan} from './controllers/planController.js'; //
-import {scanTable, uploadItemToDB} from './aws_api.js';
+import {scanTable, uploadItemToDB, getItemById, deleteItemById} from './aws_api.js';
 //import {Users} from './models/userModel.js';
 //import {Locations} from './models/locationModel.js';
 
@@ -603,6 +603,93 @@ app.post('/add-location', async (req, res) => {
   } catch (error) {
       console.error('Error adding location:', error);
       res.status(500).send('An error occurred while adding the location.');
+  }
+});
+
+// Route for displaying the "Edit Location" form
+app.get('/edit-location/:id', async (req, res) => {
+  const locationId = req.params.id;
+  // Fetch location details from DynamoDB based on locationId
+  let location = null;
+  const locationData = await getItemById('LOCATIONS', locationId); // Assuming getItemById is imported and working
+  if (locationData.success) {
+      location = locationData.data;
+  } else {
+      console.error("Error fetching location for edit:", locationData.data);
+      return res.status(500).send('Error fetching location data.');
+  }
+
+  if (!location) {
+      return res.status(404).send('Location not found.');
+  }
+
+  res.render('edit-location', { // Create edit-location.hbs later
+      title: 'Edit Location',
+      hasLayout: true,
+      css: '/css/add-location.css', // Reuse add-location.css for styling
+      location: location // Pass location data to the form
+  });
+});
+
+// Route to handle "Edit Location" form submission (PUT request to update)
+app.post('/edit-location/:id', async (req, res) => {
+  const locationId = req.params.id;
+  try {
+      const updatedLocationItem = { // Create object with updated data from form
+          _id: locationId, // Keep the original ID
+          name: req.body.name || null,
+          address: req.body.address || null,
+          district: req.body.district || null,
+          tag: req.body.tag || null,
+          phone: req.body.phone || null,
+          rating: parseFloat(req.body.rating) || 0,
+          reviews: parseInt(req.body.reviews) || 0,
+          price: parseInt(req.body.price) || 0,
+          description: req.body.description || null,
+          site: req.body.site || null,
+          photo: req.body.photo || null,
+          logo: req.body.logo || null,
+          link: req.body.link || null,
+          workingHours: req.body.workingHours || null,
+      };
+
+      // Use uploadItemToDB to update (as it overwrites if item with same key exists)
+      const uploadResult = await uploadItemToDB('LOCATIONS', updatedLocationItem); // Reusing uploadItemToDB for update
+
+      if (uploadResult && uploadResult.success) {
+          console.log('Location updated in DynamoDB successfully:', locationId);
+          await loadLocationsData(); // Refetch locations to update global data
+          res.redirect('/homepage'); // Redirect to homepage after edit
+      } else {
+          console.error('Error updating location in DynamoDB:', uploadResult ? uploadResult.data : 'Upload result undefined');
+          res.status(500).send('Failed to update location.');
+      }
+
+  } catch (error) {
+      console.error('Error editing location:', error);
+      res.status(500).send('An error occurred while editing the location.');
+  }
+});
+
+// Route to handle "Delete Location" request (DELETE request)
+app.post('/delete-location/:id', async (req, res) => {
+  const locationId = req.params.id;
+
+  try {
+      const deleteResult = await deleteItemById('LOCATIONS', locationId); // Assuming deleteItemById is imported and working
+
+      if (deleteResult && deleteResult.success) {
+          console.log('Location deleted from DynamoDB successfully:', locationId);
+          await loadLocationsData(); // Refetch locations to update global data
+          res.redirect('/homepage'); // Redirect to homepage after deletion
+      } else {
+          console.error('Error deleting location from DynamoDB:', deleteResult ? deleteResult.data : 'Delete result undefined');
+          res.status(500).send('Failed to delete location.');
+      }
+
+  } catch (error) {
+      console.error('Error deleting location:', error);
+      res.status(500).send('An error occurred while deleting the location.');
   }
 });
 

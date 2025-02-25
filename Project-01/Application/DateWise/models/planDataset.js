@@ -2,8 +2,6 @@ import { Plans } from '../models/planModel.js';
 import Utils from '../utils/utils.js';
 import LocationDataset from './locationDataset.js';
 
-
-
 class PlanDataset {
     constructor(locationDataset, avgTimePerLocation = 1.5) {
       if (!(locationDataset instanceof LocationDataset)) {

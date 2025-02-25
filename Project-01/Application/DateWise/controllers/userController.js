@@ -342,12 +342,15 @@ const getUser = async (req, res) => {
         const userScanResult = await scanTable(tableName); // Lấy tất cả users từ DynamoDB
         if (userScanResult.success) {
             const users = userScanResult.data;
-            return res.status(200).json(users);
+            //return res.status(200).json(users);
+            return { success: true, data: users };
         } else {
-            return res.status(500).json({ error: userScanResult.data });
+            //return res.status(500).json({ error: userScanResult.data });
+            return { success: false, data: userScanResult.data };
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        //res.status(500).json({ error: err.message });
+        return { success: false, data: { error: err.message } };
     }
 }
 
