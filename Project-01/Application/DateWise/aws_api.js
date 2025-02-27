@@ -13,17 +13,11 @@ import { readFile } from "fs/promises";
 
 dotenv.config();
 
-const bucketName = process.env.BUCKET_NAME;
-const bucketRegion = process.env.BUCKET_REGION;
-const accessKey = process.env.ACCESS_KEY;
-const secretAccessKey = process.env.SECRET_ACCESS_KEY;
+const bucketName = 'datewise-frontend'
+const bucketRegion = 'us-east-1'
 
 const s3Client = new S3Client({
   region: bucketRegion,
-  credentials: {
-    accessKeyId: accessKey,
-    secretAccessKey: secretAccessKey,
-  },
 });
 
 const getFile = async (filename) => {
@@ -101,12 +95,10 @@ const deleteItemFromS3 = async (path) => {
   }
 };
 
-const tableName = process.env.DB_TABLE_NAME;
+const tableName = 'datewise-db';
 
 AWS.config.update({
-  region: process.env.DB_REGION,
-  accessKeyId: process.env.ROOT_ACCESS_KEY,
-  secretAccessKey: process.env.ROOT_SECRET_ACCESS_KEY,
+  region: 'us-east-1',
 });
 const db = new AWS.DynamoDB.DocumentClient();
 
