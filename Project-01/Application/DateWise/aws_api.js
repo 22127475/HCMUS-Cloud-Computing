@@ -13,8 +13,8 @@ import { readFile } from "fs/promises";
 
 dotenv.config();
 
-const bucketName = 'datewise-frontend'
-const bucketRegion = 'us-east-1'
+const bucketName = "aws-datewise-frontend";
+const bucketRegion = "ap-southeast-1";
 
 const s3Client = new S3Client({
   region: bucketRegion,
@@ -95,10 +95,10 @@ const deleteItemFromS3 = async (path) => {
   }
 };
 
-const tableName = 'datewise-db';
+const tableName = "datewise-db";
 
 AWS.config.update({
-  region: 'us-east-1',
+  region: "us-east-1",
 });
 const db = new AWS.DynamoDB.DocumentClient();
 
@@ -124,7 +124,8 @@ const uploadItemToDB = (table, item) => {
     Item: item,
   };
   console.log(params);
-  return new Promise((resolve, reject) => { // Return a Promise
+  return new Promise((resolve, reject) => {
+    // Return a Promise
     db.put(params, (err, data) => {
       if (err) {
         console.log("Error", err);
@@ -140,14 +141,14 @@ const uploadItemToDB = (table, item) => {
 // New standalone function to get tags from DynamoDB
 const getTagsFromDynamoDB = async (tableNameTag) => {
   try {
-      const tagScanResult = await scanTable(tableNameTag);
-      if (tagScanResult.success) {
-          return { success: true, data: tagScanResult.data }; // Return success object
-      } else {
-          return { success: false, data: tagScanResult.data }; // Return failure object
-      }
+    const tagScanResult = await scanTable(tableNameTag);
+    if (tagScanResult.success) {
+      return { success: true, data: tagScanResult.data }; // Return success object
+    } else {
+      return { success: false, data: tagScanResult.data }; // Return failure object
+    }
   } catch (error) {
-      return { success: false, data: error }; // Return failure object on exception
+    return { success: false, data: error }; // Return failure object on exception
   }
 };
 
