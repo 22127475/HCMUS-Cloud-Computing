@@ -95,12 +95,13 @@ const deleteItemFromS3 = async (path) => {
   }
 };
 
-const tableName = "datewise-db";
 
 AWS.config.update({
-  region: "us-east-1",
+  region: "ap-southeast-1",
 });
-const db = new AWS.DynamoDB.DocumentClient();
+const db = new AWS.DynamoDB.DocumentClient({
+  region: "ap-southeast-1",
+});
 
 // const uploadItemToDB = (table, item) => {
 //   const params = {
